@@ -78,6 +78,22 @@ export class PrismaCharacterRepository implements ICharacterRepository {
     })
   }
 
+  async activateCharacter(characterId: UniqueEntityId, userId: UniqueEntityId): Promise<Character> {
+    const activated = await prisma.$transaction(async (tx) => {
+      await tx.character.updateMany({
+        where: { userId: userId.value },
+        data: { isActive: false },
+      })
+
+      return tx.character.update({
+        where: { id: characterId.value },
+        data: { isActive: true },
+      })
+    })
+
+    return toEntity(activated)
+  }
+
   async delete(id: UniqueEntityId): Promise<void> {
     await prisma.character.delete({ where: { id: id.value } })
   }

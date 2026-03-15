@@ -3,6 +3,8 @@ import type { FastifyRequest, FastifyReply } from 'fastify'
 import type { CreateCharacterUseCase } from '../../../application/character/create-character/CreateCharacterUseCase.js'
 import { CharacterNameAlreadyTakenError } from '../../../application/character/create-character/CreateCharacterUseCase.js'
 import type { ListCharactersUseCase } from '../../../application/character/list-characters/ListCharactersUseCase.js'
+import type { ActivateCharacterUseCase } from '../../../application/character/activate-character/ActivateCharacterUseCase.js'
+import { CharacterNotFoundError, CharacterOwnershipError } from '../../../application/character/activate-character/ActivateCharacterUseCase.js'
 
 const WOW_CLASSES = [
   'WARRIOR', 'PALADIN', 'HUNTER', 'ROGUE', 'PRIEST',
@@ -20,7 +22,8 @@ const createCharacterSchema = z.object({
 export class CharacterController {
   constructor(
     private readonly createCharacter: CreateCharacterUseCase,
-    private readonly listCharacters: ListCharactersUseCase
+    private readonly listCharacters: ListCharactersUseCase,
+    private readonly activateCharacter: ActivateCharacterUseCase
   ) {}
 
   async create(request: FastifyRequest, reply: FastifyReply): Promise<void> {
@@ -56,5 +59,27 @@ export class CharacterController {
   async list(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const output = await this.listCharacters.execute({})
     reply.send(output)
+  }
+
+  async activate(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const { id } = request.params as { id: string }
+
+    try {
+      const output = await this.activateCharacter.execute({
+        characterId: id,
+        userId: request.user.userId,
+      })
+      reply.status(200).send(output)
+    } catch (err) {
+      if (err instanceof CharacterNotFoundError) {
+        reply.status(404).send({ error: err.message })
+        return
+      }
+      if (err instanceof CharacterOwnershipError) {
+        reply.status(403).send({ error: err.message })
+        return
+      }
+      throw err
+    }
   }
 }
