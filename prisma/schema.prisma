@@ -18,6 +18,12 @@ enum RaidStatus {
   DRAFT
   OPEN
   CLOSED
+  COMPLETED
+}
+
+enum ReservationFormStatus {
+  OPEN
+  CLOSED
 }
 
 enum CharacterClass {
@@ -73,6 +79,7 @@ model User {
   refreshToken RefreshToken?
   characters   Character[]
   raids        Raid[]
+  attendances  RaidAttendance[]
 
   @@map("users")
 }
@@ -97,11 +104,41 @@ model Raid {
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
 
-  createdBy User      @relation(fields: [createdById], references: [id])
-  bosses    Boss[]
-  reserves  Reserve[]
+  createdBy   User              @relation(fields: [createdById], references: [id])
+  bosses      Boss[]
+  reserves    Reserve[]
+  attendances RaidAttendance[]
 
   @@map("raids")
+}
+
+model RaidAttendance {
+  id          String   @id @default(uuid())
+  raidId      String   @map("raid_id")
+  userId      String   @map("user_id")
+  characterId String   @map("character_id")
+  attended    Boolean
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  raid      Raid      @relation(fields: [raidId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
+  character Character @relation(fields: [characterId], references: [id])
+
+  @@unique([raidId, userId])
+  @@map("raid_attendances")
+}
+
+model ReservationForm {
+  id       String                @id @default(uuid())
+  weekOf   DateTime              @unique @map("week_of")
+  opensAt  DateTime              @map("opens_at")
+  closesAt DateTime              @map("closes_at")
+  status   ReservationFormStatus @default(OPEN)
+  createdAt DateTime             @default(now()) @map("created_at")
+  updatedAt DateTime             @updatedAt @map("updated_at")
+
+  @@map("reservation_forms")
 }
 
 model Boss {
@@ -144,8 +181,9 @@ model Character {
   createdAt DateTime       @default(now()) @map("created_at")
   updatedAt DateTime       @updatedAt @map("updated_at")
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reserves Reserve[]
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reserves    Reserve[]
+  attendances RaidAttendance[]
 
   @@unique([name, realm])
   @@map("characters")

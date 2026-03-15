@@ -1,8 +1,8 @@
 import { ValueObject } from '../../_shared/ValueObject.js'
 
-export type RaidStatusValue = 'DRAFT' | 'OPEN' | 'CLOSED'
+export type RaidStatusValue = 'DRAFT' | 'OPEN' | 'CLOSED' | 'COMPLETED'
 
-const VALID_STATUSES: RaidStatusValue[] = ['DRAFT', 'OPEN', 'CLOSED']
+const VALID_STATUSES: RaidStatusValue[] = ['DRAFT', 'OPEN', 'CLOSED', 'COMPLETED']
 
 interface RaidStatusProps {
   value: RaidStatusValue

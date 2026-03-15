@@ -82,6 +82,17 @@ export class Reserve extends AggregateRoot<ReserveProps> {
     }
   }
 
+  changeItem(name: string): void {
+    if (this.props.status.value !== 'ACTIVE') {
+      throw new Error('Only ACTIVE reserves can be updated')
+    }
+    this.props = {
+      ...this.props,
+      itemName: ItemName.create(name),
+      updatedAt: new Date(),
+    }
+  }
+
   get raidId(): string { return this.props.raidId.value }
   get characterId(): string { return this.props.characterId.value }
   get itemName(): string { return this.props.itemName.value }

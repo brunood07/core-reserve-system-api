@@ -1,4 +1,4 @@
-import type { IBossRepository } from '../../../domain/boss/repositories/IBossRepository.js'
+import type { IBossRepository, BossWithItems } from '../../../domain/boss/repositories/IBossRepository.js'
 import { Boss } from '../../../domain/boss/entities/Boss.js'
 import type { UniqueEntityId } from '../../../domain/_shared/UniqueEntityId.js'
 import { prisma } from './PrismaService.js'
@@ -66,6 +66,25 @@ export class PrismaBossRepository implements IBossRepository {
         updatedAt: boss.updatedAt,
       },
     })
+  }
+
+  async findByRaidIdWithItems(raidId: string): Promise<BossWithItems[]> {
+    const raws = await prisma.boss.findMany({
+      where: { raidId },
+      include: { items: true },
+      orderBy: { orderIndex: 'asc' },
+    })
+    return raws.map((raw) => ({
+      id: raw.id,
+      name: raw.name,
+      orderIndex: raw.orderIndex,
+      items: raw.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        itemType: item.itemType as string,
+        ilvl: item.ilvl,
+      })),
+    }))
   }
 
   async delete(id: UniqueEntityId): Promise<void> {

@@ -1,4 +1,4 @@
-import type { IReserveRepository } from '../../../domain/reserve/repositories/IReserveRepository.js'
+import type { IReserveRepository, ReserveWithCharacter } from '../../../domain/reserve/repositories/IReserveRepository.js'
 import { Reserve } from '../../../domain/reserve/entities/Reserve.js'
 import type { UniqueEntityId } from '../../../domain/_shared/UniqueEntityId.js'
 import { prisma } from './PrismaService.js'
@@ -92,6 +92,48 @@ export class PrismaReserveRepository implements IReserveRepository {
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
     })
+  }
+
+  async findActiveByCharactersAndRaid(characterIds: string[], raidId: string): Promise<Reserve | null> {
+    if (characterIds.length === 0) return null
+    const raw = await prisma.reserve.findFirst({
+      where: { raidId, characterId: { in: characterIds }, status: 'ACTIVE' },
+    })
+    if (!raw) return null
+    return Reserve.reconstitue({
+      id: raw.id,
+      raidId: raw.raidId,
+      characterId: raw.characterId,
+      itemName: raw.itemName,
+      status: raw.status,
+      createdAt: raw.createdAt,
+      updatedAt: raw.updatedAt,
+    })
+  }
+
+  async findWithCharactersByRaidId(raidId: string): Promise<ReserveWithCharacter[]> {
+    const raws = await prisma.reserve.findMany({
+      where: { raidId, status: 'ACTIVE' },
+      include: {
+        character: {
+          select: {
+            userId: true,
+            name: true,
+            class: true,
+            user: { select: { name: true } },
+          },
+        },
+      },
+    })
+    return raws.map((r) => ({
+      reserveId: r.id,
+      characterId: r.characterId,
+      userId: r.character.userId,
+      playerName: r.character.user.name,
+      characterName: r.character.name,
+      characterClass: r.character.class as string,
+      itemName: r.itemName,
+    }))
   }
 
   async save(reserve: Reserve): Promise<void> {

@@ -10,11 +10,21 @@ import {
 } from '../../../application/user/update-player/UpdatePlayerUseCase.js'
 import type { DeletePlayerUseCase } from '../../../application/user/delete-player/DeletePlayerUseCase.js'
 import { PlayerNotFoundError as DeletePlayerNotFoundError } from '../../../application/user/delete-player/DeletePlayerUseCase.js'
+import type { GetPlayerAttendanceUseCase } from '../../../application/attendance/get-player-attendance/GetPlayerAttendanceUseCase.js'
+import {
+  PlayerNotFoundError as AttendancePlayerNotFoundError,
+  ForbiddenError,
+} from '../../../application/attendance/get-player-attendance/GetPlayerAttendanceUseCase.js'
 
 const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().optional(),
+})
+
+const attendanceQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
 })
 
 const updateBodySchema = z.object({
@@ -28,7 +38,8 @@ export class PlayerController {
     private readonly listPlayers: ListPlayersUseCase,
     private readonly getPlayer: GetPlayerUseCase,
     private readonly updatePlayer: UpdatePlayerUseCase,
-    private readonly deletePlayer: DeletePlayerUseCase
+    private readonly deletePlayer: DeletePlayerUseCase,
+    private readonly getPlayerAttendance: GetPlayerAttendanceUseCase
   ) {}
 
   async list(request: FastifyRequest, reply: FastifyReply): Promise<void> {
@@ -103,6 +114,43 @@ export class PlayerController {
       reply.send(output)
     } catch (err) {
       if (err instanceof DeletePlayerNotFoundError) {
+        reply.status(404).send({ error: err.message })
+        return
+      }
+      throw err
+    }
+  }
+
+  async getAttendance(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const { id } = request.params as { id: string }
+    const result = attendanceQuerySchema.safeParse(request.query)
+
+    if (!result.success) {
+      reply.status(400).send({
+        error: 'Validation failed',
+        details: result.error.errors.map((e) => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
+      })
+      return
+    }
+
+    try {
+      const output = await this.getPlayerAttendance.execute({
+        targetUserId: id,
+        requestingUserId: request.user.userId,
+        requestingUserRole: request.user.role,
+        page: result.data.page,
+        limit: result.data.limit,
+      })
+      reply.send(output)
+    } catch (err) {
+      if (err instanceof ForbiddenError) {
+        reply.status(403).send({ error: err.message })
+        return
+      }
+      if (err instanceof AttendancePlayerNotFoundError) {
         reply.status(404).send({ error: err.message })
         return
       }

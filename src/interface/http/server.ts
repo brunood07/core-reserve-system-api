@@ -7,6 +7,9 @@ import { reserveRoutes } from './routes/reserve.routes.js'
 import { playerRoutes } from './routes/player.routes.js'
 import { bossRoutes } from './routes/boss.routes.js'
 import { itemRoutes } from './routes/item.routes.js'
+import { attendanceRoutes } from './routes/attendance.routes.js'
+import { reservationFormRoutes } from './routes/reservation-form.routes.js'
+import { reservationRoutes } from './routes/reservation.routes.js'
 
 export async function buildApp() {
   const app = Fastify({
@@ -22,8 +25,11 @@ export async function buildApp() {
   await app.register(authRoutes, { prefix: '/api/auth' })
   await app.register(playerRoutes, { prefix: '/api/players' })
   await app.register(raidRoutes, { prefix: '/raids' })
+  await app.register(attendanceRoutes, { prefix: '/api/raids' })
   await app.register(bossRoutes, { prefix: '/raids' })
   await app.register(itemRoutes, { prefix: '/api/bosses' })
+  await app.register(reservationFormRoutes, { prefix: '/api/reservation-forms' })
+  await app.register(reservationRoutes, { prefix: '/api/reservations' })
   await app.register(characterRoutes, { prefix: '/characters' })
   await app.register(reserveRoutes, { prefix: '/reserves' })
 
