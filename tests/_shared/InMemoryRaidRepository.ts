@@ -13,8 +13,10 @@ export class InMemoryRaidRepository implements IRaidRepository {
     return [...this.items]
   }
 
-  async findByName(name: string): Promise<Raid | null> {
-    return this.items.find((r) => r.name === name) ?? null
+  async findByDate(date: Date): Promise<Raid | null> {
+    return (
+      this.items.find((r) => r.date.getTime() === date.getTime()) ?? null
+    )
   }
 
   async save(raid: Raid): Promise<void> {

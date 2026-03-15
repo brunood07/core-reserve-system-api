@@ -3,48 +3,42 @@ import { Raid } from '../../../domain/raid/entities/Raid.js'
 import type { UniqueEntityId } from '../../../domain/_shared/UniqueEntityId.js'
 import { prisma } from './PrismaService.js'
 
+function toEntity(raw: {
+  id: string
+  date: Date
+  description: string | null
+  status: string
+  createdById: string
+  createdAt: Date
+  updatedAt: Date
+}): Raid {
+  return Raid.reconstitue({
+    id: raw.id,
+    date: raw.date,
+    description: raw.description,
+    status: raw.status as Parameters<typeof Raid.reconstitue>[0]['status'],
+    createdById: raw.createdById,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  })
+}
+
 export class PrismaRaidRepository implements IRaidRepository {
   async findById(id: UniqueEntityId): Promise<Raid | null> {
     const raw = await prisma.raid.findUnique({ where: { id: id.value } })
     if (!raw) return null
-    return Raid.reconstitue({
-      id: raw.id,
-      name: raw.name,
-      difficulty: raw.difficulty,
-      maxSlots: raw.maxSlots,
-      scheduledAt: raw.scheduledAt ?? undefined,
-      createdAt: raw.createdAt,
-      updatedAt: raw.updatedAt,
-    })
+    return toEntity(raw)
   }
 
   async findAll(): Promise<Raid[]> {
-    const raws = await prisma.raid.findMany({ orderBy: { createdAt: 'desc' } })
-    return raws.map((raw) =>
-      Raid.reconstitue({
-        id: raw.id,
-        name: raw.name,
-        difficulty: raw.difficulty,
-        maxSlots: raw.maxSlots,
-        scheduledAt: raw.scheduledAt ?? undefined,
-        createdAt: raw.createdAt,
-        updatedAt: raw.updatedAt,
-      })
-    )
+    const raws = await prisma.raid.findMany({ orderBy: { date: 'asc' } })
+    return raws.map(toEntity)
   }
 
-  async findByName(name: string): Promise<Raid | null> {
-    const raw = await prisma.raid.findFirst({ where: { name } })
+  async findByDate(date: Date): Promise<Raid | null> {
+    const raw = await prisma.raid.findUnique({ where: { date } })
     if (!raw) return null
-    return Raid.reconstitue({
-      id: raw.id,
-      name: raw.name,
-      difficulty: raw.difficulty,
-      maxSlots: raw.maxSlots,
-      scheduledAt: raw.scheduledAt ?? undefined,
-      createdAt: raw.createdAt,
-      updatedAt: raw.updatedAt,
-    })
+    return toEntity(raw)
   }
 
   async save(raid: Raid): Promise<void> {
@@ -52,18 +46,17 @@ export class PrismaRaidRepository implements IRaidRepository {
       where: { id: raid.id.value },
       create: {
         id: raid.id.value,
-        name: raid.name,
-        difficulty: raid.difficulty,
-        maxSlots: raid.maxSlots,
-        scheduledAt: raid.scheduledAt,
+        date: raid.date,
+        description: raid.description,
+        status: raid.status,
+        createdById: raid.createdById,
         createdAt: raid.createdAt,
         updatedAt: raid.updatedAt,
       },
       update: {
-        name: raid.name,
-        difficulty: raid.difficulty,
-        maxSlots: raid.maxSlots,
-        scheduledAt: raid.scheduledAt,
+        date: raid.date,
+        description: raid.description,
+        status: raid.status,
         updatedAt: raid.updatedAt,
       },
     })

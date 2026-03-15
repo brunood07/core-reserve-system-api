@@ -3,6 +3,8 @@ import { RaidController } from '../controllers/RaidController.js'
 import { PrismaRaidRepository } from '../../../infrastructure/database/prisma/PrismaRaidRepository.js'
 import { CreateRaidUseCase } from '../../../application/raid/create-raid/CreateRaidUseCase.js'
 import { ListRaidsUseCase } from '../../../application/raid/list-raids/ListRaidsUseCase.js'
+import { authenticate } from '../middlewares/authenticate.js'
+import { requireRoles } from '../middlewares/requireRoles.js'
 
 export async function raidRoutes(app: FastifyInstance): Promise<void> {
   const repository = new PrismaRaidRepository()
@@ -11,6 +13,9 @@ export async function raidRoutes(app: FastifyInstance): Promise<void> {
     new ListRaidsUseCase(repository)
   )
 
-  app.post('/', controller.create.bind(controller))
+  app.post('/', {
+    preHandler: [authenticate, requireRoles('RAID_LEADER', 'OFFICER', 'ADMIN')],
+  }, controller.create.bind(controller))
+
   app.get('/', controller.list.bind(controller))
 }

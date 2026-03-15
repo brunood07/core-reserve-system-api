@@ -21,7 +21,11 @@ describe('CreateReserveUseCase', () => {
     characterRepo = new InMemoryCharacterRepository()
     sut = new CreateReserveUseCase(reserveRepo, raidRepo, characterRepo)
 
-    const raid = Raid.create({ name: "Nerub'ar Palace", difficulty: 'MYTHIC', maxSlots: 20 })
+    const raid = Raid.create({
+      date: new Date('2025-01-08T00:00:00.000Z'),
+      status: 'OPEN',
+      createdById: 'user-gm',
+    })
     await raidRepo.save(raid)
     raidId = raid.id.value
 

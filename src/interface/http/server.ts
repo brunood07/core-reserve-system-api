@@ -5,6 +5,8 @@ import { raidRoutes } from './routes/raid.routes.js'
 import { characterRoutes } from './routes/character.routes.js'
 import { reserveRoutes } from './routes/reserve.routes.js'
 import { playerRoutes } from './routes/player.routes.js'
+import { bossRoutes } from './routes/boss.routes.js'
+import { itemRoutes } from './routes/item.routes.js'
 
 export async function buildApp() {
   const app = Fastify({
@@ -20,6 +22,8 @@ export async function buildApp() {
   await app.register(authRoutes, { prefix: '/api/auth' })
   await app.register(playerRoutes, { prefix: '/api/players' })
   await app.register(raidRoutes, { prefix: '/raids' })
+  await app.register(bossRoutes, { prefix: '/raids' })
+  await app.register(itemRoutes, { prefix: '/api/bosses' })
   await app.register(characterRoutes, { prefix: '/characters' })
   await app.register(reserveRoutes, { prefix: '/reserves' })
 

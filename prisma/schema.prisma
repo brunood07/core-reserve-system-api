@@ -14,10 +14,10 @@ enum UserRole {
   ADMIN
 }
 
-enum RaidDifficulty {
-  NORMAL
-  HEROIC
-  MYTHIC
+enum RaidStatus {
+  DRAFT
+  OPEN
+  CLOSED
 }
 
 enum CharacterClass {
@@ -42,6 +42,24 @@ enum ReserveStatus {
   FULFILLED
 }
 
+enum ItemType {
+  HELM
+  SHOULDER
+  BACK
+  CHEST
+  WRIST
+  HANDS
+  WAIST
+  LEGS
+  FEET
+  NECK
+  FINGER
+  TRINKET
+  WEAPON
+  SHIELD
+  OFF_HAND
+}
+
 model User {
   id           String        @id @default(uuid())
   name         String
@@ -54,6 +72,7 @@ model User {
 
   refreshToken RefreshToken?
   characters   Character[]
+  raids        Raid[]
 
   @@map("users")
 }
@@ -70,17 +89,48 @@ model RefreshToken {
 }
 
 model Raid {
-  id          String         @id @default(uuid())
-  name        String
-  difficulty  RaidDifficulty
-  maxSlots    Int            @map("max_slots")
-  scheduledAt DateTime?      @map("scheduled_at")
-  createdAt   DateTime       @default(now()) @map("created_at")
-  updatedAt   DateTime       @updatedAt @map("updated_at")
+  id          String     @id @default(uuid())
+  date        DateTime   @unique
+  description String?
+  status      RaidStatus @default(DRAFT)
+  createdById String     @map("created_by_id")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
 
-  reserves Reserve[]
+  createdBy User      @relation(fields: [createdById], references: [id])
+  bosses    Boss[]
+  reserves  Reserve[]
 
   @@map("raids")
+}
+
+model Boss {
+  id         String   @id @default(uuid())
+  raidId     String   @map("raid_id")
+  name       String
+  orderIndex Int      @map("order_index")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  raid  Raid   @relation(fields: [raidId], references: [id], onDelete: Cascade)
+  items Item[]
+
+  @@unique([raidId, orderIndex])
+  @@map("bosses")
+}
+
+model Item {
+  id       String   @id @default(uuid())
+  bossId   String   @map("boss_id")
+  name     String
+  itemType ItemType @map("item_type")
+  ilvl     Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  boss Boss @relation(fields: [bossId], references: [id], onDelete: Cascade)
+
+  @@map("items")
 }
 
 model Character {

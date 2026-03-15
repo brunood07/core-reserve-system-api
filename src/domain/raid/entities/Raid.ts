@@ -1,27 +1,30 @@
 import { AggregateRoot } from '../../_shared/AggregateRoot.js'
 import { UniqueEntityId } from '../../_shared/UniqueEntityId.js'
-import { RaidName } from '../value-objects/RaidName.js'
-import { RaidDifficulty, type RaidDifficultyValue } from '../value-objects/RaidDifficulty.js'
+import { RaidStatus, type RaidStatusValue } from '../value-objects/RaidStatus.js'
 import { RaidCreatedEvent } from '../events/RaidCreatedEvent.js'
 
 export interface RaidProps {
-  name: RaidName
-  difficulty: RaidDifficulty
-  maxSlots: number
-  scheduledAt?: Date
+  date: Date
+  description: string | null
+  status: RaidStatus
+  createdById: string
   createdAt: Date
   updatedAt: Date
 }
 
 export interface CreateRaidProps {
-  name: string
-  difficulty: RaidDifficultyValue
-  maxSlots: number
-  scheduledAt?: Date
+  date: Date
+  description?: string
+  status: RaidStatusValue
+  createdById: string
 }
 
-export interface ReconstitueRaidProps extends CreateRaidProps {
+export interface ReconstitueRaidProps {
   id: string
+  date: Date
+  description: string | null
+  status: RaidStatusValue
+  createdById: string
   createdAt: Date
   updatedAt: Date
 }
@@ -33,10 +36,10 @@ export class Raid extends AggregateRoot<RaidProps> {
 
   static create(props: CreateRaidProps): Raid {
     const raid = new Raid({
-      name: RaidName.create(props.name),
-      difficulty: RaidDifficulty.create(props.difficulty),
-      maxSlots: props.maxSlots,
-      scheduledAt: props.scheduledAt,
+      date: props.date,
+      description: props.description ?? null,
+      status: RaidStatus.create(props.status),
+      createdById: props.createdById,
       createdAt: new Date(),
       updatedAt: new Date(),
     })
@@ -47,10 +50,10 @@ export class Raid extends AggregateRoot<RaidProps> {
   static reconstitue(props: ReconstitueRaidProps): Raid {
     return new Raid(
       {
-        name: RaidName.create(props.name),
-        difficulty: RaidDifficulty.create(props.difficulty),
-        maxSlots: props.maxSlots,
-        scheduledAt: props.scheduledAt,
+        date: props.date,
+        description: props.description,
+        status: RaidStatus.create(props.status),
+        createdById: props.createdById,
         createdAt: props.createdAt,
         updatedAt: props.updatedAt,
       },
@@ -58,10 +61,10 @@ export class Raid extends AggregateRoot<RaidProps> {
     )
   }
 
-  get name(): string { return this.props.name.value }
-  get difficulty(): RaidDifficultyValue { return this.props.difficulty.value }
-  get maxSlots(): number { return this.props.maxSlots }
-  get scheduledAt(): Date | undefined { return this.props.scheduledAt }
+  get date(): Date { return this.props.date }
+  get description(): string | null { return this.props.description }
+  get status(): RaidStatusValue { return this.props.status.value }
+  get createdById(): string { return this.props.createdById }
   get createdAt(): Date { return this.props.createdAt }
   get updatedAt(): Date { return this.props.updatedAt }
 }
