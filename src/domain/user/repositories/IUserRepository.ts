@@ -56,4 +56,5 @@ export interface IUserRepository extends Repository<User> {
   findByEmail(email: string): Promise<User | null>
   findPlayers(params: FindPlayersParams): Promise<FindPlayersResult>
   findPlayerDetails(id: string): Promise<PlayerDetails | null>
+  countActivePlayers(): Promise<number>
 }

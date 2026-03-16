@@ -129,6 +129,28 @@ export class PrismaRaidAttendanceRepository implements IRaidAttendanceRepository
     return { raidId, present, absent, total: records.length }
   }
 
+  async findAverageAttendanceRate(lastN: number): Promise<number> {
+    const raids = await prisma.raid.findMany({
+      where: { status: 'COMPLETED' },
+      orderBy: { date: 'desc' },
+      take: lastN,
+      include: {
+        attendances: { select: { attended: true } },
+      },
+    })
+
+    if (raids.length === 0) return 0
+
+    const rates = raids.map((r) => {
+      const total = r.attendances.length
+      if (total === 0) return 0
+      const present = r.attendances.filter((a) => a.attended).length
+      return (present / total) * 100
+    })
+
+    return Math.round(rates.reduce((sum, r) => sum + r, 0) / rates.length)
+  }
+
   async findPlayerAttendanceHistory(
     userId: string,
     params: PlayerAttendanceParams

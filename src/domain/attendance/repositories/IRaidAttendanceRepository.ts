@@ -57,4 +57,5 @@ export interface IRaidAttendanceRepository extends Repository<RaidAttendance> {
     userId: string,
     params: PlayerAttendanceParams
   ): Promise<PlayerAttendanceHistory>
+  findAverageAttendanceRate(lastN: number): Promise<number>
 }

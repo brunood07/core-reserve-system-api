@@ -1,4 +1,4 @@
-import type { IRaidRepository } from '../../src/domain/raid/repositories/IRaidRepository.js'
+import type { IRaidRepository, RecentRaidSummary } from '../../src/domain/raid/repositories/IRaidRepository.js'
 import type { Raid } from '../../src/domain/raid/entities/Raid.js'
 import type { UniqueEntityId } from '../../src/domain/_shared/UniqueEntityId.js'
 
@@ -17,6 +17,28 @@ export class InMemoryRaidRepository implements IRaidRepository {
     return (
       this.items.find((r) => r.date.getTime() === date.getTime()) ?? null
     )
+  }
+
+  async findUpcoming(): Promise<Raid | null> {
+    const now = new Date()
+    return (
+      this.items
+        .filter((r) => (r.status === 'DRAFT' || r.status === 'OPEN') && r.date >= now)
+        .sort((a, b) => a.date.getTime() - b.date.getTime())[0] ?? null
+    )
+  }
+
+  async findRecentWithPresentCount(limit: number): Promise<RecentRaidSummary[]> {
+    return [...this.items]
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .slice(0, limit)
+      .map((r) => ({
+        id: r.id.value,
+        date: r.date,
+        status: r.status,
+        description: r.description ?? null,
+        presentCount: 0, // no attendance join in memory
+      }))
   }
 
   async save(raid: Raid): Promise<void> {

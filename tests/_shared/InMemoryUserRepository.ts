@@ -72,4 +72,8 @@ export class InMemoryUserRepository implements IUserRepository {
       recentAttendances: [],
     }
   }
+
+  async countActivePlayers(): Promise<number> {
+    return this.items.filter((u) => u.role === 'PLAYER' && !u.isDeleted).length
+  }
 }

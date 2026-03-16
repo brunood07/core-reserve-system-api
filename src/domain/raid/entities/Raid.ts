@@ -72,4 +72,9 @@ export class Raid extends AggregateRoot<RaidProps> {
     this.props.status = RaidStatus.create('COMPLETED')
     this.props.updatedAt = new Date()
   }
+
+  changeStatus(status: RaidStatusValue): void {
+    this.props.status = RaidStatus.create(status)
+    this.props.updatedAt = new Date()
+  }
 }

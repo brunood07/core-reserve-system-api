@@ -6,6 +6,8 @@ import {
   RaidDateAlreadyTakenError,
 } from '../../../application/raid/create-raid/CreateRaidUseCase.js'
 import type { ListRaidsUseCase } from '../../../application/raid/list-raids/ListRaidsUseCase.js'
+import type { UpdateRaidStatusUseCase } from '../../../application/raid/update-raid-status/UpdateRaidStatusUseCase.js'
+import { RaidNotFoundError } from '../../../application/raid/update-raid-status/UpdateRaidStatusUseCase.js'
 
 const createRaidSchema = z.object({
   date: z.string().datetime({ message: 'date must be a valid ISO 8601 datetime string' }),
@@ -15,10 +17,17 @@ const createRaidSchema = z.object({
   }),
 })
 
+const updateStatusSchema = z.object({
+  status: z.enum(['DRAFT', 'OPEN', 'CLOSED', 'COMPLETED'], {
+    errorMap: () => ({ message: 'status must be one of: DRAFT, OPEN, CLOSED, COMPLETED' }),
+  }),
+})
+
 export class RaidController {
   constructor(
     private readonly createRaid: CreateRaidUseCase,
-    private readonly listRaids: ListRaidsUseCase
+    private readonly listRaids: ListRaidsUseCase,
+    private readonly updateRaidStatus: UpdateRaidStatusUseCase
   ) {}
 
   async create(request: FastifyRequest, reply: FastifyReply): Promise<void> {
@@ -60,5 +69,37 @@ export class RaidController {
   async list(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const output = await this.listRaids.execute({})
     reply.send(output)
+  }
+
+  async updateStatus(
+    request: FastifyRequest<{ Params: { raidId: string } }>,
+    reply: FastifyReply
+  ): Promise<void> {
+    const result = updateStatusSchema.safeParse(request.body)
+
+    if (!result.success) {
+      reply.status(400).send({
+        error: 'Validation failed',
+        details: result.error.errors.map((e) => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
+      })
+      return
+    }
+
+    try {
+      const output = await this.updateRaidStatus.execute({
+        raidId: request.params.raidId,
+        status: result.data.status,
+      })
+      reply.send(output)
+    } catch (err) {
+      if (err instanceof RaidNotFoundError) {
+        reply.status(404).send({ error: err.message })
+        return
+      }
+      throw err
+    }
   }
 }

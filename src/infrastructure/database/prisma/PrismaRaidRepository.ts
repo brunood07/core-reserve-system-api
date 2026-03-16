@@ -1,4 +1,4 @@
-import type { IRaidRepository } from '../../../domain/raid/repositories/IRaidRepository.js'
+import type { IRaidRepository, RecentRaidSummary, RaidWithDetails } from '../../../domain/raid/repositories/IRaidRepository.js'
 import { Raid } from '../../../domain/raid/entities/Raid.js'
 import type { UniqueEntityId } from '../../../domain/_shared/UniqueEntityId.js'
 import { prisma } from './PrismaService.js'
@@ -64,5 +64,64 @@ export class PrismaRaidRepository implements IRaidRepository {
 
   async delete(id: UniqueEntityId): Promise<void> {
     await prisma.raid.delete({ where: { id: id.value } })
+  }
+
+  async findUpcoming(): Promise<Raid | null> {
+    const raw = await prisma.raid.findFirst({
+      where: { status: { in: ['DRAFT', 'OPEN'] }, date: { gte: new Date() } },
+      orderBy: { date: 'asc' },
+    })
+    if (!raw) return null
+    return toEntity(raw)
+  }
+
+  async findAllWithDetails(): Promise<RaidWithDetails[]> {
+    const raids = await prisma.raid.findMany({
+      orderBy: { date: 'desc' },
+      include: {
+        bosses: {
+          orderBy: { orderIndex: 'asc' },
+          include: {
+            items: {
+              select: { id: true, name: true, itemType: true, ilvl: true },
+            },
+          },
+        },
+      },
+    })
+    return raids.map((r) => ({
+      id: r.id,
+      date: r.date,
+      description: r.description,
+      status: r.status,
+      bosses: r.bosses.map((b) => ({
+        id: b.id,
+        name: b.name,
+        orderIndex: b.orderIndex,
+        items: b.items.map((i) => ({
+          id: i.id,
+          name: i.name,
+          itemType: i.itemType,
+          ilvl: i.ilvl,
+        })),
+      })),
+    }))
+  }
+
+  async findRecentWithPresentCount(limit: number): Promise<RecentRaidSummary[]> {
+    const raids = await prisma.raid.findMany({
+      orderBy: { date: 'desc' },
+      take: limit,
+      include: {
+        attendances: { where: { attended: true }, select: { id: true } },
+      },
+    })
+    return raids.map((r) => ({
+      id: r.id,
+      date: r.date,
+      status: r.status,
+      description: r.description,
+      presentCount: r.attendances.length,
+    }))
   }
 }

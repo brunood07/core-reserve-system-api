@@ -104,4 +104,8 @@ export class InMemoryRaidAttendanceRepository implements IRaidAttendanceReposito
       attendanceRate,
     }
   }
+
+  async findAverageAttendanceRate(_lastN: number): Promise<number> {
+    return 0 // stub for in-memory tests
+  }
 }

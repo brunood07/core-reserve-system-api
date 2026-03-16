@@ -3,6 +3,7 @@ import type { FastifyRequest, FastifyReply } from 'fastify'
 import type { CreateCharacterUseCase } from '../../../application/character/create-character/CreateCharacterUseCase.js'
 import { CharacterNameAlreadyTakenError } from '../../../application/character/create-character/CreateCharacterUseCase.js'
 import type { ListCharactersUseCase } from '../../../application/character/list-characters/ListCharactersUseCase.js'
+import type { GetMyCharactersUseCase } from '../../../application/character/get-my-characters/GetMyCharactersUseCase.js'
 import type { ActivateCharacterUseCase } from '../../../application/character/activate-character/ActivateCharacterUseCase.js'
 import { CharacterNotFoundError, CharacterOwnershipError } from '../../../application/character/activate-character/ActivateCharacterUseCase.js'
 
@@ -23,6 +24,7 @@ export class CharacterController {
   constructor(
     private readonly createCharacter: CreateCharacterUseCase,
     private readonly listCharacters: ListCharactersUseCase,
+    private readonly getMyCharacters: GetMyCharactersUseCase,
     private readonly activateCharacter: ActivateCharacterUseCase
   ) {}
 
@@ -58,6 +60,11 @@ export class CharacterController {
 
   async list(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const output = await this.listCharacters.execute({})
+    reply.send(output)
+  }
+
+  async listMine(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const output = await this.getMyCharacters.execute({ userId: request.user.userId })
     reply.send(output)
   }
 

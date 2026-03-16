@@ -76,6 +76,10 @@ export class PrismaUserRepository implements IUserRepository {
     await prisma.user.delete({ where: { id: id.value } })
   }
 
+  async countActivePlayers(): Promise<number> {
+    return prisma.user.count({ where: { role: 'PLAYER', deletedAt: null } })
+  }
+
   async findPlayers(params: FindPlayersParams): Promise<FindPlayersResult> {
     const { page, limit, search } = params
     const skip = (page - 1) * limit
