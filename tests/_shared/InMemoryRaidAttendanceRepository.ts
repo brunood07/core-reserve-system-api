@@ -67,7 +67,7 @@ export class InMemoryRaidAttendanceRepository implements IRaidAttendanceReposito
     const records = this.items.filter((a) => a.raidId === raidId)
 
     const toAttendee = (a: RaidAttendance) => ({
-      attendanceId: a.id.value,
+      attendanceId: a.id.value as string | null,
       userId: a.userId,
       playerName: '',        // no join in memory
       characterId: a.characterId,

@@ -64,4 +64,9 @@ export class ReservationForm extends AggregateRoot<ReservationFormProps> {
   get status(): ReservationFormStatusValue { return this.props.status }
   get createdAt(): Date { return this.props.createdAt }
   get updatedAt(): Date { return this.props.updatedAt }
+
+  updateClosesAt(closesAt: Date): void {
+    this.props.closesAt = closesAt
+    this.props.updatedAt = new Date()
+  }
 }

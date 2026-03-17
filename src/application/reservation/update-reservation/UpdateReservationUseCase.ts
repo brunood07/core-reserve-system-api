@@ -90,7 +90,7 @@ export class UpdateReservationUseCase
       throw new ReserveNotInOpenFormError()
     }
 
-    const targetRaid = await this.raidRepository.findByDate(form.weekOf)
+    const targetRaid = await this.raidRepository.findUpcoming()
     if (!targetRaid || reserve.raidId !== targetRaid.id.value) {
       throw new ReserveNotInOpenFormError()
     }

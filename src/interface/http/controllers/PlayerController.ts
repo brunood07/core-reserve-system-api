@@ -15,6 +15,7 @@ import {
   PlayerNotFoundError as AttendancePlayerNotFoundError,
   ForbiddenError,
 } from '../../../application/attendance/get-player-attendance/GetPlayerAttendanceUseCase.js'
+import type { GetAttendanceRankingUseCase } from '../../../application/attendance/get-attendance-ranking/GetAttendanceRankingUseCase.js'
 
 const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -39,7 +40,8 @@ export class PlayerController {
     private readonly getPlayer: GetPlayerUseCase,
     private readonly updatePlayer: UpdatePlayerUseCase,
     private readonly deletePlayer: DeletePlayerUseCase,
-    private readonly getPlayerAttendance: GetPlayerAttendanceUseCase
+    private readonly getPlayerAttendance: GetPlayerAttendanceUseCase,
+    private readonly getAttendanceRanking: GetAttendanceRankingUseCase
   ) {}
 
   async list(request: FastifyRequest, reply: FastifyReply): Promise<void> {
@@ -119,6 +121,11 @@ export class PlayerController {
       }
       throw err
     }
+  }
+
+  async getRanking(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const output = await this.getAttendanceRanking.execute()
+    reply.send(output)
   }
 
   async getAttendance(request: FastifyRequest, reply: FastifyReply): Promise<void> {

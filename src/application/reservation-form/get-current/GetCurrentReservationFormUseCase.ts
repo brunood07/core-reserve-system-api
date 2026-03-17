@@ -60,9 +60,13 @@ export class GetCurrentReservationFormUseCase
     const sourceRaidDate = new Date(form.weekOf)
     sourceRaidDate.setUTCDate(sourceRaidDate.getUTCDate() - 7)
 
-    let canReserve = false
-    const sourceRaid = await this.raidRepository.findByDate(sourceRaidDate)
-    if (sourceRaid) {
+    const sourceRaid = await this.raidRepository.findByDayOf(sourceRaidDate)
+
+    let canReserve: boolean
+    if (!sourceRaid) {
+      // No previous raid exists — first cycle, everyone can reserve
+      canReserve = true
+    } else {
       const attendance = await this.attendanceRepository.findByRaidAndUser(
         sourceRaid.id.value,
         input.userId
@@ -70,8 +74,8 @@ export class GetCurrentReservationFormUseCase
       canReserve = attendance?.attended === true
     }
 
-    // Target raid: the raid on weekOf (the upcoming one players are reserving for)
-    const targetRaid = await this.raidRepository.findByDate(form.weekOf)
+    // Target raid: the next upcoming scheduled raid
+    const targetRaid = await this.raidRepository.findUpcoming()
 
     let bosses: BossWithItems[] = []
     let currentReservation: CurrentReservation | null = null

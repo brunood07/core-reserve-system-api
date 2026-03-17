@@ -33,7 +33,9 @@ export interface RaidWithDetails {
 
 export interface IRaidRepository extends Repository<Raid> {
   findByDate(date: Date): Promise<Raid | null>
+  findByDayOf(date: Date): Promise<Raid | null>
   findUpcoming(): Promise<Raid | null>
+  findActive(): Promise<Raid | null>
   findRecentWithPresentCount(limit: number): Promise<RecentRaidSummary[]>
   findAllWithDetails(): Promise<RaidWithDetails[]>
 }

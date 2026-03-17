@@ -105,20 +105,20 @@ export class CreateFormReserveUseCase
     const sourceDate = new Date(form.weekOf)
     sourceDate.setUTCDate(sourceDate.getUTCDate() - 7)
 
-    const sourceRaid = await this.raidRepository.findByDate(sourceDate)
-    if (!sourceRaid) {
-      throw new NotAttendedError()
+    const sourceRaid = await this.raidRepository.findByDayOf(sourceDate)
+    if (sourceRaid) {
+      const attendance = await this.attendanceRepository.findByRaidAndUser(
+        sourceRaid.id.value,
+        input.userId
+      )
+      if (!attendance?.attended) {
+        throw new NotAttendedError()
+      }
     }
-    const attendance = await this.attendanceRepository.findByRaidAndUser(
-      sourceRaid.id.value,
-      input.userId
-    )
-    if (!attendance?.attended) {
-      throw new NotAttendedError()
-    }
+    // If no source raid exists, this is the first cycle — allow the reservation
 
-    // 3. Load target raid (the raid on weekOf)
-    const targetRaid = await this.raidRepository.findByDate(form.weekOf)
+    // 3. Load target raid (the next upcoming scheduled raid)
+    const targetRaid = await this.raidRepository.findUpcoming()
     if (!targetRaid) {
       throw new ItemNotFoundError(input.itemId)
     }

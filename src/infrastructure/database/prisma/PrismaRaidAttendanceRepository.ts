@@ -4,6 +4,7 @@ import type {
   RaidAttendanceSummary,
   PlayerAttendanceParams,
   PlayerAttendanceHistory,
+  AttendanceRankingEntry,
 } from '../../../domain/attendance/repositories/IRaidAttendanceRepository.js'
 import { RaidAttendance } from '../../../domain/attendance/entities/RaidAttendance.js'
 import type { UniqueEntityId } from '../../../domain/_shared/UniqueEntityId.js'
@@ -105,28 +106,47 @@ export class PrismaRaidAttendanceRepository implements IRaidAttendanceRepository
   }
 
   async findRaidAttendanceSummary(raidId: string): Promise<RaidAttendanceSummary> {
-    const records = await prisma.raidAttendance.findMany({
-      where: { raidId },
-      include: {
-        user: { select: { name: true } },
-        character: { select: { name: true, class: true } },
+    const users = await prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        characters: { some: { isActive: true } },
       },
-      orderBy: { user: { name: 'asc' } },
+      include: {
+        characters: { where: { isActive: true }, take: 1 },
+        attendances: {
+          where: { raidId },
+          include: { character: { select: { name: true, class: true } } },
+        },
+      },
+      orderBy: { name: 'asc' },
     })
 
-    const toAttendee = (r: (typeof records)[number]) => ({
-      attendanceId: r.id,
-      userId: r.userId,
-      playerName: r.user.name,
-      characterId: r.characterId,
-      characterName: r.character.name,
-      characterClass: r.character.class as string,
-    })
+    const present: RaidAttendanceSummary['present'] = []
+    const absent: RaidAttendanceSummary['absent'] = []
 
-    const present = records.filter((r) => r.attended).map(toAttendee)
-    const absent = records.filter((r) => !r.attended).map(toAttendee)
+    for (const user of users) {
+      const activeChar = user.characters[0]
+      if (!activeChar) continue
 
-    return { raidId, present, absent, total: records.length }
+      const att = user.attendances[0]
+
+      const record = {
+        attendanceId: att?.id ?? null,
+        userId: user.id,
+        playerName: user.name,
+        characterId: att ? att.characterId : activeChar.id,
+        characterName: att ? att.character.name : activeChar.name,
+        characterClass: att ? (att.character.class as string) : (activeChar.class as string),
+      }
+
+      if (att?.attended) {
+        present.push(record)
+      } else {
+        absent.push(record)
+      }
+    }
+
+    return { raidId, present, absent, total: present.length + absent.length }
   }
 
   async findAverageAttendanceRate(lastN: number): Promise<number> {
@@ -149,6 +169,42 @@ export class PrismaRaidAttendanceRepository implements IRaidAttendanceRepository
     })
 
     return Math.round(rates.reduce((sum, r) => sum + r, 0) / rates.length)
+  }
+
+  async findAttendanceRanking(): Promise<AttendanceRankingEntry[]> {
+    const users = await prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        characters: { some: { isActive: true } },
+      },
+      include: {
+        characters: { where: { isActive: true }, take: 1 },
+        attendances: {
+          where: { raid: { status: 'COMPLETED' } },
+          select: { attended: true },
+        },
+      },
+      orderBy: { name: 'asc' },
+    })
+
+    return users
+      .map((user) => {
+        const activeChar = user.characters[0]
+        if (!activeChar) return null
+        const total = user.attendances.length
+        const attended = user.attendances.filter((a) => a.attended).length
+        return {
+          userId: user.id,
+          playerName: user.name,
+          characterName: activeChar.name,
+          characterClass: activeChar.class as string,
+          attended,
+          total,
+          attendanceRate: total > 0 ? Math.round((attended / total) * 100) : 0,
+        }
+      })
+      .filter((e): e is AttendanceRankingEntry => e !== null)
+      .sort((a, b) => b.attendanceRate - a.attendanceRate || b.attended - a.attended)
   }
 
   async findPlayerAttendanceHistory(

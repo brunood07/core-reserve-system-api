@@ -10,6 +10,8 @@ import { PrismaItemRepository } from '../../../infrastructure/database/prisma/Pr
 import { GetCurrentReservationFormUseCase } from '../../../application/reservation-form/get-current/GetCurrentReservationFormUseCase.js'
 import { CreateFormReserveUseCase } from '../../../application/reservation-form/create-reserve/CreateFormReserveUseCase.js'
 import { ListFormReservationsUseCase } from '../../../application/reservation-form/list-reservations/ListFormReservationsUseCase.js'
+import { CreateReservationFormUseCase } from '../../../application/reservation-form/create-form/CreateReservationFormUseCase.js'
+import { UpdateReservationFormUseCase } from '../../../application/reservation-form/update-form/UpdateReservationFormUseCase.js'
 import { authenticate } from '../middlewares/authenticate.js'
 import { requireRoles } from '../middlewares/requireRoles.js'
 
@@ -46,13 +48,17 @@ export async function reservationFormRoutes(app: FastifyInstance): Promise<void>
       attendanceRepo,
       bossRepo,
       reserveRepo
-    )
+    ),
+    new CreateReservationFormUseCase(formRepo),
+    new UpdateReservationFormUseCase(formRepo)
   )
 
   const authGuard = { preHandler: [authenticate] }
   const leaderGuard = { preHandler: [authenticate, requireRoles('RAID_LEADER', 'OFFICER', 'ADMIN')] }
 
   app.get('/current', authGuard, controller.getCurrent.bind(controller))
+  app.post('/', leaderGuard, controller.createForm.bind(controller))
+  app.patch('/:formId', leaderGuard, controller.updateForm.bind(controller))
   app.post('/:formId/reserve', authGuard, controller.reserve.bind(controller))
   app.get('/:formId/reservations', leaderGuard, controller.getReservations.bind(controller))
 }

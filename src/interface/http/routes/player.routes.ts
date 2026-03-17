@@ -7,6 +7,7 @@ import { GetPlayerUseCase } from '../../../application/user/get-player/GetPlayer
 import { UpdatePlayerUseCase } from '../../../application/user/update-player/UpdatePlayerUseCase.js'
 import { DeletePlayerUseCase } from '../../../application/user/delete-player/DeletePlayerUseCase.js'
 import { GetPlayerAttendanceUseCase } from '../../../application/attendance/get-player-attendance/GetPlayerAttendanceUseCase.js'
+import { GetAttendanceRankingUseCase } from '../../../application/attendance/get-attendance-ranking/GetAttendanceRankingUseCase.js'
 import { authenticate } from '../middlewares/authenticate.js'
 import { requireRoles } from '../middlewares/requireRoles.js'
 
@@ -19,10 +20,14 @@ export async function playerRoutes(app: FastifyInstance): Promise<void> {
     new GetPlayerUseCase(userRepo),
     new UpdatePlayerUseCase(userRepo),
     new DeletePlayerUseCase(userRepo),
-    new GetPlayerAttendanceUseCase(userRepo, attendanceRepo)
+    new GetPlayerAttendanceUseCase(userRepo, attendanceRepo),
+    new GetAttendanceRankingUseCase(attendanceRepo)
   )
 
   const leaderGuard = { preHandler: [authenticate, requireRoles('RAID_LEADER', 'OFFICER', 'ADMIN')] }
+
+  // Static routes must be registered before parametric ones
+  app.get('/ranking', { preHandler: [authenticate] }, controller.getRanking.bind(controller))
 
   app.get('/', leaderGuard, controller.list.bind(controller))
   app.get('/:id', leaderGuard, controller.getById.bind(controller))

@@ -13,6 +13,7 @@ import {
   ForbiddenError as UpdateForbiddenError,
   ItemNotFoundError as UpdateItemNotFoundError,
 } from '../../../application/reservation/update-reservation/UpdateReservationUseCase.js'
+import type { GetWeekSummaryUseCase } from '../../../application/reservation/get-week-summary/GetWeekSummaryUseCase.js'
 
 const updateBodySchema = z.object({
   itemId: z.string().uuid('itemId must be a valid UUID'),
@@ -22,8 +23,14 @@ const updateBodySchema = z.object({
 export class ReservationController {
   constructor(
     private readonly deleteReservation: DeleteReservationUseCase,
-    private readonly updateReservation: UpdateReservationUseCase
+    private readonly updateReservation: UpdateReservationUseCase,
+    private readonly getWeekSummary: GetWeekSummaryUseCase
   ) {}
+
+  async weekSummary(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const output = await this.getWeekSummary.execute()
+    reply.send(output)
+  }
 
   async remove(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const { id } = request.params as { id: string }

@@ -4,6 +4,8 @@ import type { SaveAttendanceUseCase } from '../../../application/attendance/save
 import { RaidNotFoundError as SaveRaidNotFoundError } from '../../../application/attendance/save-attendance/SaveAttendanceUseCase.js'
 import type { GetRaidAttendanceUseCase } from '../../../application/attendance/get-raid-attendance/GetRaidAttendanceUseCase.js'
 import { RaidNotFoundError as GetRaidNotFoundError } from '../../../application/attendance/get-raid-attendance/GetRaidAttendanceUseCase.js'
+import type { EnrollPlayerUseCase } from '../../../application/attendance/enroll-player/EnrollPlayerUseCase.js'
+import { RaidNotFoundError as EnrollRaidNotFoundError } from '../../../application/attendance/enroll-player/EnrollPlayerUseCase.js'
 
 const saveAttendanceSchema = z.object({
   attendances: z.array(
@@ -15,10 +17,16 @@ const saveAttendanceSchema = z.object({
   ),
 })
 
+const enrollPlayerSchema = z.object({
+  userId: z.string().min(1, 'userId is required'),
+  characterId: z.string().min(1, 'characterId is required'),
+})
+
 export class AttendanceController {
   constructor(
     private readonly saveAttendance: SaveAttendanceUseCase,
-    private readonly getRaidAttendance: GetRaidAttendanceUseCase
+    private readonly getRaidAttendance: GetRaidAttendanceUseCase,
+    private readonly enrollPlayer: EnrollPlayerUseCase
   ) {}
 
   async save(request: FastifyRequest, reply: FastifyReply): Promise<void> {
@@ -59,6 +67,37 @@ export class AttendanceController {
       reply.send(output)
     } catch (err) {
       if (err instanceof GetRaidNotFoundError) {
+        reply.status(404).send({ error: err.message })
+        return
+      }
+      throw err
+    }
+  }
+
+  async enroll(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const { raidId } = request.params as { raidId: string }
+
+    const result = enrollPlayerSchema.safeParse(request.body)
+    if (!result.success) {
+      reply.status(400).send({
+        error: 'Validation failed',
+        details: result.error.errors.map((e) => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
+      })
+      return
+    }
+
+    try {
+      const output = await this.enrollPlayer.execute({
+        raidId,
+        userId: result.data.userId,
+        characterId: result.data.characterId,
+      })
+      reply.status(201).send(output)
+    } catch (err) {
+      if (err instanceof EnrollRaidNotFoundError) {
         reply.status(404).send({ error: err.message })
         return
       }

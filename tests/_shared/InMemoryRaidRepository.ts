@@ -19,6 +19,24 @@ export class InMemoryRaidRepository implements IRaidRepository {
     )
   }
 
+  async findByDayOf(date: Date): Promise<Raid | null> {
+    const start = new Date(date)
+    start.setUTCHours(0, 0, 0, 0)
+    const end = new Date(start)
+    end.setUTCDate(end.getUTCDate() + 1)
+    return (
+      this.items.find((r) => r.date >= start && r.date < end) ?? null
+    )
+  }
+
+  async findActive(): Promise<Raid | null> {
+    return (
+      this.items
+        .filter((r) => r.status === 'DRAFT' || r.status === 'OPEN')
+        .sort((a, b) => a.date.getTime() - b.date.getTime())[0] ?? null
+    )
+  }
+
   async findUpcoming(): Promise<Raid | null> {
     const now = new Date()
     return (

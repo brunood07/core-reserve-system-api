@@ -41,6 +41,20 @@ export class PrismaRaidRepository implements IRaidRepository {
     return toEntity(raw)
   }
 
+  async findByDayOf(date: Date): Promise<Raid | null> {
+    const start = new Date(date)
+    start.setUTCHours(0, 0, 0, 0)
+    const end = new Date(start)
+    end.setUTCDate(end.getUTCDate() + 1)
+
+    const raw = await prisma.raid.findFirst({
+      where: { date: { gte: start, lt: end } },
+      orderBy: { date: 'asc' },
+    })
+    if (!raw) return null
+    return toEntity(raw)
+  }
+
   async save(raid: Raid): Promise<void> {
     await prisma.raid.upsert({
       where: { id: raid.id.value },
@@ -64,6 +78,15 @@ export class PrismaRaidRepository implements IRaidRepository {
 
   async delete(id: UniqueEntityId): Promise<void> {
     await prisma.raid.delete({ where: { id: id.value } })
+  }
+
+  async findActive(): Promise<Raid | null> {
+    const raw = await prisma.raid.findFirst({
+      where: { status: { in: ['DRAFT', 'OPEN'] } },
+      orderBy: { date: 'asc' },
+    })
+    if (!raw) return null
+    return toEntity(raw)
   }
 
   async findUpcoming(): Promise<Raid | null> {

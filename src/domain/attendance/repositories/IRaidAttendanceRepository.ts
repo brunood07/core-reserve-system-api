@@ -11,7 +11,7 @@ export interface AttendanceRecord {
 // ── GET /raids/:raidId/attendance ─────────────────────────────────────────────
 
 export interface AttendeeRecord {
-  attendanceId: string
+  attendanceId: string | null
   userId: string
   playerName: string
   characterId: string
@@ -46,6 +46,18 @@ export interface PlayerAttendanceHistory {
   attendanceRate: number
 }
 
+// ── GET /players/ranking ──────────────────────────────────────────────────────
+
+export interface AttendanceRankingEntry {
+  userId: string
+  playerName: string
+  characterName: string
+  characterClass: string
+  attended: number
+  total: number
+  attendanceRate: number
+}
+
 // ── Interface ─────────────────────────────────────────────────────────────────
 
 export interface IRaidAttendanceRepository extends Repository<RaidAttendance> {
@@ -58,4 +70,5 @@ export interface IRaidAttendanceRepository extends Repository<RaidAttendance> {
     params: PlayerAttendanceParams
   ): Promise<PlayerAttendanceHistory>
   findAverageAttendanceRate(lastN: number): Promise<number>
+  findAttendanceRanking(): Promise<AttendanceRankingEntry[]>
 }

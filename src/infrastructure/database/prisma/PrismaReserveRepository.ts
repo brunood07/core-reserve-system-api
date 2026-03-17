@@ -149,6 +149,7 @@ export class PrismaReserveRepository implements IReserveRepository {
         updatedAt: reserve.updatedAt,
       },
       update: {
+        itemName: reserve.itemName,
         status: reserve.status,
         updatedAt: reserve.updatedAt,
       },
